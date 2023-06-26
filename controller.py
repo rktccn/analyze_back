@@ -1,14 +1,40 @@
 import pandas as pd
-from flask import jsonify
-from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn import tree
-import json
+import matplotlib.pyplot as plt
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import apriori, association_rules
+
+plt.switch_backend('agg')
 
 
 # 获取原始数据
-def get_data():
+def get_data(itype):
+    if itype == 0:
+        data = [[1, 2, 3], [4, 2], [4, 1, 3], [4, 2], [1, 5, 3], [4, 1, 2], [4, 1, 5, 3], [4, 1, 2], [1, 2]]
+        dataSet = ['面包', '可乐', '麦片', '牛奶', '鸡蛋']
+
+        columns = []
+        for column in dataSet:
+            columns.append({
+                'dataKey': column,
+                'key': column,
+                'title': column,
+                'width': 150
+            })
+
+        data_list = []
+
+        for item in data:
+            data_list.append({})
+            for i in item:
+                data_list[-1][dataSet[i-1]] = 1
+            data_list[-1]['id'] = len(data_list)
+
+
+        return data_list, columns, len(data_list)
+
     # 读取数据
     data = pd.read_csv('iris.csv')
 
@@ -28,7 +54,6 @@ def get_data():
     for index, row in data.iterrows():
         data_list.append(row.to_dict())
         data_list[index]['id'] = index
-    print(data_list)
 
     # count:数据总数
     count = len(data_list)
@@ -86,7 +111,7 @@ def get_cluster(numbers):
 
 
 # 决策树分析
-def get_tree():
+def get_tree(maxDepth=5, minLeaf=1):
     # 对iris数据集进行处理
     data = pd.read_csv('iris.csv')
 
@@ -96,45 +121,54 @@ def get_tree():
     # 对iris数据集做决策树分析
     X = data.drop('Species', axis=1)
     y = data['Species']
-    clf = tree.DecisionTreeClassifier()
+
+    # 生成决策树
+    clf = tree.DecisionTreeClassifier(max_depth=maxDepth, min_samples_leaf=minLeaf)
     clf = clf.fit(X, y)
-    # 将决策树数据转换为字典
-    tree_data = clf.tree_.__getstate__()
 
-    # 定义递归函数转换为JSON格式
-    def convert_to_custom_json(node):
-        result = {
-            'name': f'分类{node["feature"]}',
-            'children': []
-        }
-
-        if node['left_child'] != -1:
-            left_child = tree_data['nodes'][node['left_child']]
-            result['children'].append(convert_to_custom_json(left_child))
-
-        if node['right_child'] != -1:
-            right_child = tree_data['nodes'][node['right_child']]
-            result['children'].append(convert_to_custom_json(right_child))
-
-        if len(result['children']) == 0:
-            result.pop('children')
-            result['name'] = f'叶子节点{result["name"]}'
-
-        return result
-
-    # 创建根节点
-    root_node = tree_data['nodes'][0]
-    json_data = {
-        'data': {
-            'name': 'root',
-            'children': [convert_to_custom_json(root_node)]
-        }
-    }
-
-    # 使用plt显示图像
+    # 获取决策树图片的二进制信息
     plt.figure(figsize=(15, 10))
-    tree.plot_tree(clf, filled=True, rounded=True)
-    plt.show()
-    # 将JSON数据打印出来
-    print(json.dumps(json_data, indent=4))
-    return json_data
+    tree.plot_tree(clf, filled=True)
+
+    # 获取二进制信息
+    import io
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    import base64
+    str = base64.b64encode(buf.read())
+    plt.close()
+
+    return str.decode()
+
+
+# 获取关联规则数据
+def get_association(confidence=0.01, support=0.01):
+    # 1: 面包 2: 可乐 3: 麦片 4: 牛奶 5: 鸡蛋
+    # 获取二阶频繁项集，输出格式为：[项1，项2，支持度]
+    data = [[1, 2, 3], [4, 2], [4, 1, 3], [4, 2], [1, 5, 3], [4, 1, 2], [4, 1, 5, 3], [4, 1, 2], [1, 2]]
+    dataSet = ['面包', '可乐', '麦片', '牛奶', '鸡蛋']
+
+    # 对数据集进行独热编码
+    te = TransactionEncoder()
+    te_ary = te.fit(data).transform(data)
+    df = pd.DataFrame(te_ary, columns=te.columns_)
+
+    # 使用Apriori算法获取频繁项集
+    frequent_itemsets = apriori(df, min_support=support, use_colnames=True, max_len=2)
+
+    # 根据频繁项集生成关联规则
+    # 判断是否为空
+    if frequent_itemsets.empty:
+        return [], dataSet
+    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=confidence)
+
+    # 格式化输出关联规则
+    output = []
+    for index, row in rules.iterrows():
+        antecedents = list(row['antecedents'])
+        consequents = list(row['consequents'])
+        support = row['support']
+        output.append([antecedents[0] - 1, consequents[0] - 1, round(support, 2)])
+
+    return output, dataSet

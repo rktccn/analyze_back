@@ -1,4 +1,4 @@
-from controller import get_tree
+from controller import get_data
 
 if __name__ == '__main__':
-    get_tree()
+    get_data(0)
