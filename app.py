@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from controller import get_scatter, get_cluster, get_data
+from controller import get_scatter, get_cluster, get_data, get_tree
 
 app = Flask(__name__)
 
@@ -33,6 +33,15 @@ def get_cluster_data():
     numbers = request.args.get('k_value')
     res = {
         'data': get_cluster(int(numbers))
+    }
+    return jsonify(res)
+
+
+# 获取决策树数据
+@app.route('/get_tree_data', methods=['get'])
+def get_tree_data():
+    res = {
+        'data': get_tree()
     }
     return jsonify(res)
 
