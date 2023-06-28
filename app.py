@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from controller import get_scatter, get_cluster, get_data, get_tree, get_association
+from controller import get_cluster_DB, get_scatter, get_cluster, get_data, get_tree, get_association
 
 app = Flask(__name__)
 
@@ -22,8 +22,10 @@ def get_origin_data():
 # 获取散点图数据
 @app.route('/get_scatter_data', methods=['get'])
 def get_scatter_data():
+    kinds = request.args.get('scatterType')
+    print(kinds)
     res = {
-        'data': get_scatter()
+        'data': get_scatter(int(kinds))
     }
     return jsonify(res)
 
@@ -31,10 +33,18 @@ def get_scatter_data():
 # 获取聚类数据
 @app.route('/get_cluster_data', methods=['get'])
 def get_cluster_data():
+    kinds = request.args.get('scatterType')
+    clusterType = request.args.get('clusterType')
     numbers = request.args.get('k_value')
-    res = {
-        'data': get_cluster(int(numbers))
-    }
+    if int(clusterType) == 0:
+        res = {
+            'data': get_cluster(int(numbers), int(kinds))
+        }
+    elif int(clusterType) == 1:
+        res = {
+            'data': get_cluster_DB(int(kinds))
+        }
+
     return jsonify(res)
 
 

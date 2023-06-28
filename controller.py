@@ -1,10 +1,12 @@
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
+from sklearn.datasets import make_blobs, make_moons
+from sklearn.cluster import KMeans, DBSCAN
 from sklearn import tree
 import matplotlib.pyplot as plt
 from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import apriori, association_rules
+import numpy as np
 
 plt.switch_backend('agg')
 
@@ -29,9 +31,8 @@ def get_data(itype):
         for item in data:
             data_list.append({})
             for i in item:
-                data_list[-1][dataSet[i-1]] = 1
+                data_list[-1][dataSet[i - 1]] = 1
             data_list[-1]['id'] = len(data_list)
-
 
         return data_list, columns, len(data_list)
 
@@ -61,29 +62,38 @@ def get_data(itype):
 
 
 # 获取散点图原始数据
-def get_scatter_origin():
-    # 读取数据
-    data = pd.read_csv('iris.csv')
-    # 将二元属性转换为数值型数据
-    data['Species'] = data['Species'].map({'setosa': 0, 'versicolor': 1, 'virginica': 2})
+def get_scatter_origin(artifact):
+    if artifact == 0:
+        # 读取数据
+        data = pd.read_csv('iris.csv')
+        # 将二元属性转换为数值型数据
+        data['Species'] = data['Species'].map({'setosa': 0, 'versicolor': 1, 'virginica': 2})
 
-    # 提取特征向量并分类标签
-    X = data.drop('Species', axis=1)
-    origin_label = data['Species']
+        # 提取特征向量并分类标签
+        X = data.drop('Species', axis=1)
+        origin_label = data['Species']
 
-    # 获取分类数量
-    n_clusters = len(set(origin_label))
+        # 获取分类数量
+        n_clusters = len(set(origin_label))
 
-    # 使用PCA进行降维
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X)
-    return X_pca, origin_label, n_clusters
+        # 使用PCA进行降维
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(X)
+        return X_pca, origin_label, n_clusters
+    elif artifact == 1:
+        # 1是团状blobs数据集
+        X_blobs, origin_label = make_blobs(n_samples=1000, centers=3, random_state=42)
+        return X_blobs, origin_label, 3
+    elif artifact == 2:
+        # 2是月牙数据集
+        X_moons, origin_label = make_moons(n_samples=300, noise=0.1, random_state=32)
+        return X_moons, origin_label, 2
 
 
 # 获取散点图数据
-def get_scatter():
+def get_scatter(kinds):
     data_list_origin = []
-    X_pca, origin_label, n_clusters = get_scatter_origin()
+    X_pca, origin_label, n_clusters = get_scatter_origin(kinds)
 
     for i in range(n_clusters):
         data_list_origin.append([])
@@ -94,9 +104,9 @@ def get_scatter():
 
 
 # 获取聚类数据
-def get_cluster(numbers):
+def get_cluster(numbers, artifact):
     data_list_kmeans = []
-    X_pca, origin_label, n_clusters = get_scatter_origin()
+    X_pca, origin_label, n_clusters = get_scatter_origin(artifact)
 
     # 使用K-means进行聚类
     kmeans = KMeans(n_clusters=numbers)
@@ -108,6 +118,22 @@ def get_cluster(numbers):
             data_list_kmeans[i].append([round(item[0], 2), round(item[1], 2)])
 
     return data_list_kmeans
+
+
+# 获取dbscan聚类数据
+def get_cluster_DB(artifact):
+    data_list_dbscan = []
+    X_pca, origin_label, n_clusters = get_scatter_origin(artifact)
+    # 使用dbscan进行聚类
+    dbscan = DBSCAN(eps=0.2, min_samples=5)
+    labels_dbscan = dbscan.fit_predict(X_pca)
+    number = len(np.unique(labels_dbscan))
+
+    for i in range(number):
+        data_list_dbscan.append([])
+        for item in X_pca[labels_dbscan == i]:
+            data_list_dbscan[i].append([round(item[0], 2), round(item[1], 2)])
+    return data_list_dbscan
 
 
 # 决策树分析

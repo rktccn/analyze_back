@@ -1,4 +1,4 @@
-from controller import get_data
+from controller import get_scatter_origin, get_cluster
 
 if __name__ == '__main__':
-    get_data(0)
+    print(get_cluster(3, 0))
