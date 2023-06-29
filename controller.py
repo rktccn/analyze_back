@@ -142,24 +142,15 @@ def get_scatter_origin(artifact):
 # 获取散点图数据
 def get_scatter(kinds):
     data_list_origin = []
-    if kinds != 3:
-        X_pca, origin_label, n_clusters = get_scatter_origin(kinds)
-        for i in range(n_clusters):
-            data_list_origin.append([])
-            for item in X_pca[origin_label == i]:
-                data_list_origin[i].append([round(item[0], 2), round(item[1], 2)])
-        return data_list_origin
-    else:
-        X_line, X, y = get_data()
-        for i in range(1):
-            data_list_origin.append([])
-            for item in X_line:
-                data_list_origin[i].append([round(item[0], 2), round(item[1], 2)])
-        return (data_list_origin)
-
-    # 获取聚类数据
+    X_pca, origin_label, n_clusters = get_scatter_origin(kinds)
+    for i in range(n_clusters):
+        data_list_origin.append([])
+        for item in X_pca[origin_label == i]:
+            data_list_origin[i].append([round(item[0], 2), round(item[1], 2)])
+    return data_list_origin
 
 
+# 获取kmeans聚类数据
 def get_cluster(numbers, artifact):
     data_list_kmeans = []
     X_pca, origin_label, n_clusters = get_scatter_origin(artifact)
