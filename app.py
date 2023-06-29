@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from controller import get_cluster_DB, get_scatter, get_cluster, get_data, get_tree, get_association
+from controller import get_regress, get_cluster_DB, get_scatter, get_cluster, get_data, get_tree, get_association
 
 app = Flask(__name__)
 
@@ -70,6 +70,20 @@ def get_association_data():
         'data': output,
         'xAxis': dataSet,
         'yAxis': dataSet
+    }
+    return jsonify(res)
+
+
+# 获取回归数据
+@app.route('/get_regress_data', methods=['get'])
+def get_regress_data():
+    type = request.args.get('type')
+
+    output, coef, intercept = get_regress(int(type))
+    res = {
+        'data': output,
+        'coef': coef,
+        'intercept': intercept
     }
     return jsonify(res)
 

@@ -1,4 +1,5 @@
-from controller import get_scatter_origin, get_cluster
+from controller import get_scatter_origin, get_regress
 
 if __name__ == '__main__':
-    print(get_cluster(3, 0))
+    output, coef, intercept = get_regress(1)
+    print(intercept)
